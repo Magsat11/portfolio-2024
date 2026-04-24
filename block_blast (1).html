@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Blast</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0f14;
+  color: #e8eaf0;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 10px 40px;
+  min-height: 100vh;
+  user-select: none;
+}
+
+h1 { font-size: 26px; font-weight: 800; color: #4fc3f7; margin-bottom: 14px; }
+h1 span { color: #e8eaf0; }
+
+.hud { display: flex; gap: 14px; margin-bottom: 14px; }
+.hud-box { background: #161920; border: 1px solid #252830; border-radius: 10px; padding: 6px 20px; text-align: center; }
+.hud-box .lbl { font-size: 10px; color: #5a5f70; letter-spacing: 1px; text-transform: uppercase; }
+.hud-box .num { font-size: 20px; font-weight: 700; font-family: monospace; color: #e8eaf0; }
+
+#board-wrap { position: relative; background: #161920; border: 1px solid #252830; border-radius: 14px; padding: 10px; margin-bottom: 14px; }
+
+#board { display: grid; grid-template-columns: repeat(8, 46px); grid-template-rows: repeat(8, 46px); gap: 3px; }
+
+.cell { width: 46px; height: 46px; border-radius: 7px; background: #1c1f28; border: 1px solid #22252f; transition: background 0.08s; }
+.cell.filled { border: 1px solid rgba(255,255,255,0.08); }
+.cell.hl { border: 2px solid rgba(255,255,255,0.5); opacity: 0.65; }
+.cell.bad { background: #3a1010 !important; border: 2px solid #6b2020; opacity: 0.7; }
+
+@keyframes pop { 0%{transform:scale(0.5);opacity:0.4} 65%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
+@keyframes boom { 0%{transform:scale(1);opacity:1} 45%{transform:scale(1.25);opacity:1} 100%{transform:scale(0);opacity:0} }
+.cell.pop { animation: pop 0.22s ease; }
+.cell.boom { animation: boom 0.3s ease forwards; }
+
+#pieces-row { display: flex; gap: 12px; justify-content: center; margin-bottom: 14px; }
+
+.piece-card {
+  background: #161920; border: 1px solid #252830; border-radius: 12px;
+  padding: 12px; cursor: grab; display: flex; align-items: center;
+  justify-content: center; min-width: 86px; min-height: 86px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.piece-card:hover:not(.used) { transform: translateY(-3px) scale(1.05); border-color: #3a3f50; }
+.piece-card.used { opacity: 0.18; cursor: default; pointer-events: none; }
+.piece-card.src { opacity: 0.25; }
+
+.pgrid { display: grid; gap: 3px; }
+.pc { width: 20px; height: 20px; border-radius: 4px; }
+.pc.e { background: transparent; }
+
+#ghost { position: fixed; pointer-events: none; z-index: 9999; display: none; transform: translate(-50%, -60%); }
+#ghost .pgrid { gap: 3px; }
+#ghost .pc { width: 42px; height: 42px; border-radius: 7px; }
+
+#over {
+  display: none; position: absolute; inset: 0; background: rgba(10,12,18,0.92);
+  border-radius: 14px; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; z-index: 10;
+}
+#over.show { display: flex; }
+#over h2 { font-size: 26px; font-weight: 800; color: #ef5350; }
+#over p { font-size: 14px; color: #5a5f70; font-family: monospace; }
+#over button {
+  background: #4fc3f7; color: #000; border: none; border-radius: 10px;
+  padding: 10px 28px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px;
+}
+#over button:hover { opacity: 0.85; }
+
+.hint { font-size: 12px; color: #5a5f70; }
+
+.fscore {
+  position: fixed; font-size: 22px; font-weight: 800; color: #ffd54f;
+  pointer-events: none; z-index: 9998; white-space: nowrap;
+  animation: fup 1s ease forwards;
+}
+@keyframes fup { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(1.4)} }
+</style>
+</head>
+<body>
+
+<h1>Block<span>Blast</span></h1>
+
+<div class="hud">
+  <div class="hud-box"><div class="lbl">Ball</div><div class="num" id="sc">0</div></div>
+  <div class="hud-box"><div class="lbl">Rekord</div><div class="num" id="hi">0</div></div>
+</div>
+
+<div id="board-wrap">
+  <div id="board"></div>
+  <div id="over">
+    <h2>O'yin Tugadi!</h2>
+    <p id="fp">Ball: 0</p>
+    <button onclick="startGame()">Qayta o'ynash</button>
+  </div>
+</div>
+
+<div id="pieces-row"></div>
+<div class="hint">Blokni sudrab taxtaga qo'ying</div>
+
+<div id="ghost"><div id="gi" class="pgrid"></div></div>
+
+<script>
+const R = 8, C = 8;
+const COLORS = ['#4fc3f7','#ef5350','#66bb6a','#ffa726','#ab47bc','#ec407a','#26c6da','#d4e157'];
+const SHAPES = [
+  [[1]],
+  [[1,1]],[[1],[1]],
+  [[1,1,1]],[[1],[1],[1]],
+  [[1,1,1,1]],[[1],[1],[1],[1]],
+  [[1,1],[1,1]],
+  [[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],
+  [[1,0],[1,0],[1,1]],[[0,1],[0,1],[1,1]],
+  [[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]],
+  [[1,1,1],[0,1,0]],[[0,1,0],[1,1,1]],
+  [[1,1],[1,0]],[[1,1],[0,1]],[[1,0],[1,1]],[[0,1],[1,1]],
+  [[1,1,1],[1,1,1]],[[1,1],[1,1],[1,1]],
+  [[1,0,0],[1,0,0],[1,1,1]],[[0,0,1],[0,0,1],[1,1,1]],
+];
+
+let board, pieces, score, best, dragIdx, dragging;
+
+function rnd(a) { return a[Math.floor(Math.random()*a.length)]; }
+
+function startGame() {
+  board = Array.from({length:R},()=>Array(C).fill(null));
+  score = 0; dragIdx = -1; dragging = false;
+  best = +localStorage.getItem('bb')||0;
+  document.getElementById('over').classList.remove('show');
+  buildBoard(); refill(); updHUD();
+}
+
+function buildBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  for (let r=0;r<R;r++) for (let c=0;c<C;c++) {
+    const d = document.createElement('div');
+    d.className = 'cell'; d.id = `c${r}_${c}`;
+    el.appendChild(d);
+  }
+}
+
+function syncBoard() {
+  for (let r=0;r<R;r++) for (let c=0;c<C;c++) {
+    const el = document.getElementById(`c${r}_${c}`);
+    if (!el) continue;
+    el.className = board[r][c] ? 'cell filled' : 'cell';
+    el.style.background = board[r][c] || '';
+  }
+}
+
+function refill() {
+  pieces = [{shape:rnd(SHAPES),color:rnd(COLORS),used:false},
+            {shape:rnd(SHAPES),color:rnd(COLORS),used:false},
+            {shape:rnd(SHAPES),color:rnd(COLORS),used:false}];
+  renderPieces();
+  if (!anyFits()) endGame();
+}
+
+function renderPieces() {
+  const row = document.getElementById('pieces-row');
+  row.innerHTML = '';
+  pieces.forEach((p,i) => {
+    const card = document.createElement('div');
+    card.className = 'piece-card' + (p.used?' used':'');
+    card.dataset.i = i;
+
+    const pg = document.createElement('div');
+    pg.className = 'pgrid';
+    pg.style.gridTemplateColumns = `repeat(${p.shape[0].length},20px)`;
+    p.shape.forEach(row => row.forEach(v => {
+      const pc = document.createElement('div');
+      pc.className = v ? 'pc' : 'pc e';
+      if (v) pc.style.background = p.color;
+      pg.appendChild(pc);
+    }));
+    card.appendChild(pg);
+
+    if (!p.used) {
+      card.addEventListener('mousedown', e=>{e.preventDefault();startDrag(e.clientX,e.clientY,i);});
+      card.addEventListener('touchstart', e=>{e.preventDefault();const t=e.touches[0];startDrag(t.clientX,t.clientY,i);},{passive:false});
+    }
+    row.appendChild(card);
+  });
+}
+
+function startDrag(cx,cy,i) {
+  dragging = true; dragIdx = i;
+  const p = pieces[i];
+  const gi = document.getElementById('gi');
+  gi.innerHTML = '';
+  gi.style.gridTemplateColumns = `repeat(${p.shape[0].length},42px)`;
+  p.shape.forEach(row => row.forEach(v => {
+    const pc = document.createElement('div');
+    pc.className = v ? 'pc' : 'pc e';
+    if (v) pc.style.background = p.color;
+    gi.appendChild(pc);
+  }));
+  const ghost = document.getElementById('ghost');
+  ghost.style.display = 'block';
+  posGhost(cx,cy);
+  const card = document.querySelector(`.piece-card[data-i="${i}"]`);
+  if (card) card.classList.add('src');
+}
+
+function posGhost(cx,cy) {
+  const g = document.getElementById('ghost');
+  g.style.left = cx+'px';
+  g.style.top = (cy-20)+'px';
+}
+
+function getAnchor(cx,cy) {
+  const p = pieces[dragIdx];
+  const boardEl = document.getElementById('board');
+  const rect = boardEl.getBoundingClientRect();
+  const cw = rect.width/C, ch = rect.height/R;
+  const col = Math.floor((cx-rect.left)/cw);
+  const row = Math.floor((cy-rect.top)/ch);
+  return { ar: row - Math.floor(p.shape.length/2), ac: col - Math.floor(p.shape[0].length/2) };
+}
+
+function canPlace(shape,ar,ac) {
+  for (let r=0;r<shape.length;r++) for (let c=0;c<shape[r].length;c++) {
+    if (!shape[r][c]) continue;
+    const tr=ar+r, tc=ac+c;
+    if (tr<0||tr>=R||tc<0||tc>=C||board[tr][tc]) return false;
+  }
+  return true;
+}
+
+function showPreview(cx,cy) {
+  syncBoard();
+  if (dragIdx<0) return;
+  const p = pieces[dragIdx];
+  const {ar,ac} = getAnchor(cx,cy);
+  const ok = canPlace(p.shape,ar,ac);
+  for (let r=0;r<p.shape.length;r++) for (let c=0;c<p.shape[r].length;c++) {
+    if (!p.shape[r][c]) continue;
+    const tr=ar+r, tc=ac+c;
+    if (tr<0||tr>=R||tc<0||tc>=C) continue;
+    if (board[tr][tc]) continue;
+    const el = document.getElementById(`c${tr}_${tc}`);
+    if (!el) continue;
+    if (ok) { el.classList.add('hl'); el.style.background=p.color; }
+    else { el.classList.add('bad'); }
+  }
+}
+
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  posGhost(e.clientX,e.clientY);
+  showPreview(e.clientX,e.clientY);
+});
+document.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  e.preventDefault();
+  const t=e.touches[0];
+  posGhost(t.clientX,t.clientY);
+  showPreview(t.clientX,t.clientY);
+},{passive:false});
+
+document.addEventListener('mouseup', e => { if (dragging) drop(e.clientX,e.clientY); });
+document.addEventListener('touchend', e => { if (dragging) { const t=e.changedTouches[0]; drop(t.clientX,t.clientY); } });
+
+function drop(cx,cy) {
+  document.getElementById('ghost').style.display = 'none';
+  dragging = false;
+  const card = dragIdx>=0 ? document.querySelector(`.piece-card[data-i="${dragIdx}"]`) : null;
+  if (card) card.classList.remove('src');
+
+  if (dragIdx<0) { syncBoard(); return; }
+
+  const p = pieces[dragIdx];
+  const {ar,ac} = getAnchor(cx,cy);
+
+  if (canPlace(p.shape,ar,ac)) {
+    // place
+    for (let r=0;r<p.shape.length;r++) for (let c=0;c<p.shape[r].length;c++) {
+      if (!p.shape[r][c]) continue;
+      board[ar+r][ac+c] = p.color;
+      const el = document.getElementById(`c${ar+r}_${ac+c}`);
+      if (el) { el.className='cell filled pop'; el.style.background=p.color; setTimeout(()=>el.classList.remove('pop'),230); }
+    }
+    pieces[dragIdx].used = true;
+    renderPieces();
+    const pts = clearLines();
+    score += p.shape.flat().filter(Boolean).length*2 + pts;
+    if (score>best) { best=score; localStorage.setItem('bb',best); }
+    updHUD();
+    if (pieces.every(p=>p.used)) setTimeout(refill,360);
+    else if (!anyFits()) setTimeout(endGame,400);
+  } else {
+    syncBoard();
+  }
+  dragIdx = -1;
+}
+
+function clearLines() {
+  const fr=[], fc=[];
+  for (let r=0;r<R;r++) if (board[r].every(v=>v)) fr.push(r);
+  for (let c=0;c<C;c++) if (board.every(row=>row[c])) fc.push(c);
+  if (!fr.length&&!fc.length) return 0;
+
+  const cells = new Set();
+  fr.forEach(r=>{ for(let c=0;c<C;c++) cells.add(`${r}_${c}`); });
+  fc.forEach(c=>{ for(let r=0;r<R;r++) cells.add(`${r}_${c}`); });
+
+  cells.forEach(k=>{
+    const [r,c]=k.split('_').map(Number);
+    const el=document.getElementById(`c${r}_${c}`);
+    if(el) el.classList.add('boom');
+  });
+  setTimeout(()=>{
+    cells.forEach(k=>{ const[r,c]=k.split('_').map(Number); board[r][c]=null; });
+    syncBoard();
+  },320);
+
+  const total = fr.length+fc.length;
+  const pts = cells.size*10 + (total>1?total*30:0);
+
+  if (total>1) {
+    const br = document.getElementById('board-wrap').getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className='fscore';
+    el.textContent=`+${pts}  COMBO x${total}!`;
+    el.style.left=(br.left+br.width/2-90)+'px';
+    el.style.top=(br.top+br.height/2-20)+'px';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1000);
+  }
+  return pts;
+}
+
+function anyFits() {
+  for (const p of pieces) {
+    if (p.used) continue;
+    for (let r=0;r<=R-p.shape.length;r++)
+      for (let c=0;c<=C-p.shape[0].length;c++)
+        if (canPlace(p.shape,r,c)) return true;
+  }
+  return false;
+}
+
+function endGame() {
+  document.getElementById('fp').textContent=`Ball: ${score}`;
+  document.getElementById('over').classList.add('show');
+}
+
+function updHUD() {
+  document.getElementById('sc').textContent=score;
+  document.getElementById('hi').textContent=best;
+}
+
+startGame();
+</script>
+</body>
+</html>
