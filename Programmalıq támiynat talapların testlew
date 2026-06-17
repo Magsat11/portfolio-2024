@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="kaa">
+<head>
+    <meta charset="UTF-8">
+    <title>Programmalik ta'miynat talaplarin testlew</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 15mm;
+            @bottom-right {
+                content: counter(page);
+                font-family: 'Times New Roman', serif;
+                font-size: 9pt;
+                color: #6b7280;
+            }
+            @bottom-left {
+                content: "Talaplarin Testlew Portali";
+                font-family: 'Times New Roman', serif;
+                font-size: 9pt;
+                color: #6b7280;
+            }
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #1f2937;
+            background-color: #ffffff;
+        }
+
+        /* Full bleed style title area using negative margin tricks */
+        .header-banner {
+            margin: -20mm -15mm 25px -15mm;
+            padding: 30px 15mm;
+            background: #1e3a8a;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .header-banner h1 {
+            margin: 0 0 10px 0;
+            font-size: 22pt;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .header-banner p {
+            margin: 0;
+            font-size: 12pt;
+            color: #bfdbfe;
+            font-style: italic;
+        }
+
+        h2 {
+            font-size: 14pt;
+            color: #1e3a8a;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 4px solid #3b82f6;
+            page-break-after: avoid;
+        }
+
+        p {
+            margin: 0 0 12px 0;
+            text-align: justify;
+        }
+
+        .intro-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .intro-box p {
+            margin: 0;
+        }
+
+        /* Grid replacement for PDF compliance */
+        .checklist-container {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+            border-spacing: 10px;
+            margin-left: -10px;
+            margin-right: -10px;
+        }
+
+        .checklist-row {
+            display: table-row;
+        }
+
+        .checklist-card {
+            display: table-cell;
+            width: 50%;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            vertical-align: top;
+            page-break-inside: avoid;
+        }
+
+        .checklist-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 12pt;
+            color: #2563eb;
+        }
+
+        .checklist-card p {
+            margin: 0;
+            font-size: 10.5pt;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 25px;
+            font-size: 10pt;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: bold;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            vertical-align: top;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 9pt;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .status-success {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+
+        ul {
+            margin: 0 0 15px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-banner">
+        <h1>Programmalik Ta'miynat Talaplarin Testlew</h1>
+        <p>Proekt baslanmastan aldin qa'telerdi aniqlaw ha'm sapasin ta'miyinlew sistemasi</p>
+    </div>
+
+    <div class="intro-box">
+        <p><strong>Talaplarni testlew (Requirements Testing) ne ushin kerek?</strong><br>
+        Bul processte bag'darlamanin' ko'rsetpeleri ha'm talaplari (SRS) kod jaziliwdan aldin analiz etiledi. Maqset – jobalastiriwdag'i qa'telerdi erte aniqlap, qarejetler ha'm waqitti tejew esaplanadi.</p>
+    </div>
+
+    <h2>1. Tiykarg'i Tekseriw Kriteriyalari (Checklist)</h2>
+    
+    <div class="checklist-container">
+        <div class="checklist-row">
+            <div class="checklist-card">
+                <h3>Aniqlik (Clarity)</h3>
+                <p>Talaplar ha'mme ushin tu'snikli ha'm eki ma'nisli so'zlerden uzaq boliwi shart.</p>
+            </div>
+            <div class="checklist-card">
+                <h3>Toliqliq (Completeness)</h3>
+                <p>Barliq funksiyalar, dizimnen o'tiw ha'm qa'wipsizlik qag'iydalari toliq jazilg'an boliwi kerek.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="checklist-container">
+        <div class="checklist-row">
+            <div class="checklist-card">
+                <h3>Izbe-izlik (Consistency)</h3>
+                <p>Talaplar bir-birine qarama-qarsi kelmewi ha'm logikalik jaqtan duris boliwi shart.</p>
+            </div>
+            <div class="checklist-card">
+                <h3>Testlewge qolayliq (Testability)</h3>
+                <p>Ha'r bir talapti keleside arnawli test keysler arqali tekserip ko'riw mu'mkin boliwi kerek.</p>
+            </div>
+        </div>
+    </div>
+
+    <h2>2. Talaplar Analizinin' Misali (Traceability Matrix)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%;">Sayt Bo'limi</th>
+                <th style="width: 35%;">Belgilengen Talap (Requirement)</th>
+                <th style="width: 15%;">Status</th>
+                <th style="width: 30%;">Sheshimi ha'm Usinis</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Dizimnen o'tiw</strong></td>
+                <td>Paydalaniwshi telefon nomeri arqali dizimnen o'tedi.</td>
+                <td><span class="status-badge status-error">X Qa'te bar</span></td>
+                <td>Qaysi mamleket kodlari (+998 t.b.) qabillanatu'gini aniq jaziliwi kerek.</td>
